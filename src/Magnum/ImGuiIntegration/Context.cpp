@@ -292,12 +292,12 @@ void Context::drawFrame() {
     ImGui::Render();
 
     ImGuiIO& io = ImGui::GetIO();
-    const Vector2 fbSize = Vector2{io.DisplaySize}*Vector2{io.DisplayFramebufferScale};
+    const Vector2 fbSize = Vector2{io.DisplaySize};//*Vector2{io.DisplayFramebufferScale};
     if(!fbSize.product()) return;
 
     ImDrawData* drawData = ImGui::GetDrawData();
     CORRADE_INTERNAL_ASSERT(drawData); /* This is always valid after Render() */
-    drawData->ScaleClipRects(io.DisplayFramebufferScale);
+    //drawData->ScaleClipRects(io.DisplayFramebufferScale);
 
     const Matrix3 projection =
         Matrix3::translation({-1.0f, 1.0f})*
@@ -319,22 +319,26 @@ void Context::drawFrame() {
         for(std::int_fast32_t c = 0; c < cmdList->CmdBuffer.Size; ++c) {
             const ImDrawCmd* pcmd = &cmdList->CmdBuffer[c];
 
-            GL::Renderer::setScissor(Range2Di{Range2D{
-                {pcmd->ClipRect.x, fbSize.y() - pcmd->ClipRect.w},
-                {pcmd->ClipRect.z, fbSize.y() - pcmd->ClipRect.y}}
-                    .scaled(_supersamplingRatio)});
+            if (pcmd->UserCallback != nullptr) {
+                pcmd->UserCallback(cmdList, pcmd);
+            } else {
+                GL::Renderer::setScissor(Range2Di{Range2D{
+                    {pcmd->ClipRect.x, fbSize.y() - pcmd->ClipRect.w},
+                    {pcmd->ClipRect.z, fbSize.y() - pcmd->ClipRect.y}}
+                        .scaled(_supersamplingRatio)});
 
-            _mesh.setCount(pcmd->ElemCount);
-            _mesh.setIndexBuffer(_indexBuffer, indexBufferOffset*sizeof(ImDrawIdx),
-                sizeof(ImDrawIdx) == 2
-                ? GL::MeshIndexType::UnsignedShort
-                : GL::MeshIndexType::UnsignedInt);
+                _mesh.setCount(pcmd->ElemCount);
+                _mesh.setIndexBuffer(_indexBuffer, indexBufferOffset*sizeof(ImDrawIdx),
+                    sizeof(ImDrawIdx) == 2
+                    ? GL::MeshIndexType::UnsignedShort
+                    : GL::MeshIndexType::UnsignedInt);
 
-            indexBufferOffset += pcmd->ElemCount;
+                indexBufferOffset += pcmd->ElemCount;
 
-            _shader
-                .bindTexture(*static_cast<GL::Texture2D*>(pcmd->TextureId))
-                .draw(_mesh);
+                _shader
+                    .bindTexture(*static_cast<GL::Texture2D*>(pcmd->TextureId))
+                    .draw(_mesh);
+            }
         }
     }
 
