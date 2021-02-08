@@ -246,7 +246,7 @@ void Context::relayout(const Vector2& size, const Vector2i& windowSize, const Ve
     /* io.DisplayFramebufferScale is currently not used by imgui (1.66b), so
        why bother */
     /** @todo revisit when there's progress on https://github.com/ocornut/imgui/issues/1676 */
-    io.DisplayFramebufferScale = _supersamplingRatio; // LTB uses this.
+    io.DisplayFramebufferScale = {_supersamplingRatio.x(), _supersamplingRatio.y()}; // LTB uses this.
 }
 
 void Context::relayout(const Vector2i& size) {
